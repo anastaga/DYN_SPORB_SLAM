@@ -12,7 +12,7 @@ void InitYoloDetector()
 YoloDetection::YoloDetection()
 {
     torch::jit::setTensorExprFuserEnabled(false);
-    mModule = torch::jit::load("/home/anast/Workspaces/PhD_ws/src/SLAM_Methods/modified_YOLO_ORB_SLAM3/models/yolov5s.torchscript.pt");
+    mModule = torch::jit::load("yolov5s.torchscript.pt");
 
     std::ifstream f("coco.names");
     std::string name = "";

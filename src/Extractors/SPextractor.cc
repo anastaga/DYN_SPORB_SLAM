@@ -68,6 +68,7 @@
 #include <utility>
 #include <unordered_map>
 #include <opencv2/opencv.hpp>
+#include "YoloDetection.h"
 using namespace cv;
 using namespace std;
 
@@ -86,6 +87,8 @@ SPextractor::SPextractor(int _nfeatures, float _scaleFactor, int _nlevels,
     nfeatures(_nfeatures), scaleFactor(_scaleFactor), nlevels(_nlevels),
     iniThFAST(_iniThFAST), minThFAST(_minThFAST)
 {
+
+    InitYoloDetector();
    
     if(mModelstr == "onnx")
     {   Configuration cfg;
@@ -598,10 +601,12 @@ int SPextractor::ExtractSingleLayer(const cv::Mat &image, std::vector<cv::KeyPoi
         featureExtractor->lastmatch = lastmatchnum;
         featureExtractor->Extractor_Inference(cfg , inputImage);
         featureExtractor->Extractor_PostProcess(cfg , std::move(featureExtractor->extractor_outputtensors[0]),vKeyPoints,Descriptors);
+        FilterDynamicKeypoints(image_copy, vKeyPoints, Descriptors);
     }
     else{
         // if(!mModel->infer(image,  vKeyPoints, Descriptors, nfeatures))
         // cerr <<"Error while detecting keypoints"<<endl;
+        FilterDynamicKeypoints(image, vKeyPoints, Descriptors);
     }
 
     //std::cout << "[INFO] keyPoints size:" <<vKeyPoints.size()<<std::endl;
@@ -709,6 +714,47 @@ void SPextractor::ComputePyramid(cv::Mat image)
         }
     }
 
+}
+
+void SPextractor::FilterDynamicKeypoints(const cv::Mat& image, std::vector<cv::KeyPoint>& vKeyPoints,
+                                cv::Mat &Descriptors)
+{
+    if(!gYoloDetector)
+        return;
+
+    gYoloDetector->GetImage(image);
+    if(!gYoloDetector->Detect())
+    {
+        gYoloDetector->ClearImage();
+        gYoloDetector->ClearArea();
+        return;
+    }
+
+    std::vector<cv::KeyPoint> filteredKeys;
+    cv::Mat filteredDesc;
+    for(size_t i=0;i<vKeyPoints.size();++i)
+    {
+        bool bDynamic = false;
+        for(const auto& rect : gYoloDetector->mvDynamicArea)
+        {
+            if(rect.contains(vKeyPoints[i].pt))
+            {
+                bDynamic = true;
+                break;
+            }
+        }
+        if(!bDynamic)
+        {
+            filteredKeys.push_back(vKeyPoints[i]);
+            filteredDesc.push_back(Descriptors.row((int)i));
+        }
+    }
+
+    gYoloDetector->ClearImage();
+    gYoloDetector->ClearArea();
+
+    vKeyPoints = std::move(filteredKeys);
+    Descriptors = filteredDesc.clone();
 }
 
 } //namespace ORB_SLAM

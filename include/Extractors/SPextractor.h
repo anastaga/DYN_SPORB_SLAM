@@ -30,6 +30,7 @@
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
 #include "Extractors/superpoint_onnx.h"
+#include "YoloDetection.h"
 //#include "Extractors/super_point.h"
 #ifdef EIGEN_MPL2_ONLY
 #undef EIGEN_MPL2_ONLY
@@ -122,6 +123,8 @@ protected:
     
     int ExtractMultiLayers(const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
                            cv::Mat &Descriptors);
+    void FilterDynamicKeypoints(const cv::Mat& image, std::vector<cv::KeyPoint>& vKeyPoints,
+                                cv::Mat &Descriptors);
     std::vector<int> mnFeaturesPerLevel;
 
     std::vector<int> umax;
