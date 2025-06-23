@@ -17,7 +17,7 @@ class YoloDetection
 public:
     YoloDetection();
     ~YoloDetection();
-    void GetImage(cv::Mat& RGB);
+    void GetImage(const cv::Mat& RGB);
     void ClearImage();
     bool Detect();
     void ClearArea();
@@ -39,3 +39,4 @@ extern YoloDetection* gYoloDetector;
 void InitYoloDetector();
 
 #endif //YOLO_DETECT_H
+
