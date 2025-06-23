@@ -52,6 +52,7 @@ find_package(yaml-cpp REQUIRED)
 find_package(Boost REQUIRED)
 find_package(Gflags REQUIRED)
 find_package(Glog REQUIRED)
+find_package(Torch REQUIRED)
 # find_package(realsense2)
 
 include_directories(
@@ -64,10 +65,11 @@ ${EIGEN3_INCLUDE_DIR}
 ${CUDA_INCLUDE_DIRS}
 ${Boost_INCLUDE_DIRS}
 ${YAML_CPP_INCLUDE_DIR}
-${Pangolin_INCLUDE_DIRS}
-${GFLAGS_INCLUDE_DIRS}
-${GLOG_INCLUDE_DIRS}
-${OpenCV_INCLUDE_DIRS}
+    ${Pangolin_INCLUDE_DIRS}
+    ${GFLAGS_INCLUDE_DIRS}
+    ${GLOG_INCLUDE_DIRS}
+    ${TORCH_INCLUDE_DIRS}
+    ${OpenCV_INCLUDE_DIRS}
 )
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
@@ -108,6 +110,7 @@ src/Extractors/superpoint_onnx.cc
 src/Matchers/SPmatcher.cc
 src/Matchers/lightglue_onnx.cpp
 src/Matchers/transform.cpp
+src/YoloDetection.cpp
 include/Timestamp.h
 include/Random.h
 include/System.h
@@ -145,6 +148,7 @@ include/Matchers/SPmatcher.h
 include/Matchers/lightglue_onnx.h
 include/Matchers/Configuration.h
 include/Matchers/transform.h
+include/YoloDetection.h
 include/Settings.h)
 
 add_subdirectory(Thirdparty/g2o)
@@ -154,11 +158,12 @@ ${CUDA_LIBRARIES}
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
-${PROJECT_SOURCE_DIR}/Thirdparty/DBoW3/lib/libDBoW3.so
-${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
--lboost_serialization
--lcrypto
-/usr/local/lib/libonnxruntime.so
+    ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW3/lib/libDBoW3.so
+    ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
+    -lboost_serialization
+    -lcrypto
+    ${TORCH_LIBRARIES}
+    /usr/local/lib/libonnxruntime.so
 )
 
 
