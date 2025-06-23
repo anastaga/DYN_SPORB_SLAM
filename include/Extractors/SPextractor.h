@@ -30,6 +30,7 @@
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
 #include "Extractors/superpoint_onnx.h"
+#include "YoloDetection.h"
 //#include "Extractors/super_point.h"
 #ifdef EIGEN_MPL2_ONLY
 #undef EIGEN_MPL2_ONLY
@@ -101,6 +102,9 @@ public:
     std::string mModelstr = "onnx";//表明创建onnx模型还是tensorrt
 
     float lastmatchnum = 0;
+    void FilterDynamicKeypoints(const cv::Mat& image,
+                                std::vector<cv::KeyPoint>& keypoints,
+                                cv::Mat& descriptors);
 protected:
 
     void ComputePyramid(cv::Mat image);
