@@ -27,6 +27,7 @@
 #include "GeometricCamera.h"
 #include "Extractors/SPextractor.h"
 #include "Matchers/SPmatcher.h"
+#include "YoloDetection.h"
 #include <thread>
 #include <include/CameraModels/Pinhole.h>
 #include <include/CameraModels/KannalaBrandt8.h>
@@ -546,6 +547,29 @@ void Frame::ExtractKeyPoints(int flag, const cv::Mat &im, const int x0, const in
     vector<int> vLapping = {x0,x1};
     if(flag==0){
         monoLeft = (*mpExtractorLeft)(im,mvKeys,mDescriptors);
+
+        InitYoloDetector();
+        if(::gYoloDetector){
+            ::gYoloDetector->ClearArea();
+            ::gYoloDetector->GetImage(im);
+            ::gYoloDetector->Detect();
+            std::vector<cv::KeyPoint> filteredKeys;
+            cv::Mat filteredDesc;
+            for(size_t i=0;i<mvKeys.size();++i){
+                bool drop=false;
+                for(const auto& box : ::gYoloDetector->mvDynamicArea){
+                    if(box.contains(mvKeys[i].pt)){
+                        drop=true; break;
+                    }
+                }
+                if(!drop){
+                    filteredKeys.push_back(mvKeys[i]);
+                    filteredDesc.push_back(mDescriptors.row(i));
+                }
+            }
+            mvKeys.swap(filteredKeys);
+            mDescriptors = filteredDesc.clone();
+        }
 
         //画出特征点图
         // for (const cv::KeyPoint& point : mvKeys) {
