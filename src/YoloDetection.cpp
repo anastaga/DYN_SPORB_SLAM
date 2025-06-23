@@ -142,14 +142,14 @@ vector<torch::Tensor> YoloDetection::non_max_suppression(torch::Tensor preds, fl
     return output;
 }
 
-void YoloDetection::GetImage(cv::Mat &RGB)
+void YoloDetection::GetImage(const cv::Mat& RGB)
 {
-    mRGB = RGB;
+    mRGB = RGB.clone();  // clone ensures we get a deep copy of the image
 }
 
 void YoloDetection::ClearImage()
 {
-    mRGB = 0;
+    mRGB.release(); // ✅ Proper OpenCV memory management
 }
 
 void YoloDetection::ClearArea()
@@ -157,4 +157,3 @@ void YoloDetection::ClearArea()
     mvDynamicArea.clear();
     mmDetectMap.clear();
 }
-
