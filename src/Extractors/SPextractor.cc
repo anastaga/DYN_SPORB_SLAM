@@ -65,6 +65,7 @@
 #include <opencv2/core/eigen.hpp>
 
 #include "Extractors/super_point.h"
+#include "YoloDetection.h"
 #include <utility>
 #include <unordered_map>
 #include <opencv2/opencv.hpp>
@@ -94,6 +95,7 @@ SPextractor::SPextractor(int _nfeatures, float _scaleFactor, int _nlevels,
         cfg.extractorType = "superpoint";
         featureExtractor = new SuperPointOnnxRunner();
         featureExtractor->InitOrtEnv(cfg);
+        InitYoloDetector();
 
     }
     // else{
@@ -598,6 +600,7 @@ int SPextractor::ExtractSingleLayer(const cv::Mat &image, std::vector<cv::KeyPoi
         featureExtractor->lastmatch = lastmatchnum;
         featureExtractor->Extractor_Inference(cfg , inputImage);
         featureExtractor->Extractor_PostProcess(cfg , std::move(featureExtractor->extractor_outputtensors[0]),vKeyPoints,Descriptors);
+        FilterDynamicKeypoints(image, vKeyPoints, Descriptors);
     }
     else{
         // if(!mModel->infer(image,  vKeyPoints, Descriptors, nfeatures))
@@ -648,8 +651,50 @@ int SPextractor::ExtractMultiLayers(const cv::Mat &image, std::vector<cv::KeyPoi
         }
     }
     cv::vconcat(allDescriptors.data(), allDescriptors.size(), Descriptors);
-    
+
+    FilterDynamicKeypoints(image, vKeyPoints, Descriptors);
     return vKeyPoints.size();
+}
+
+void SPextractor::FilterDynamicKeypoints(const cv::Mat& image,
+                                         std::vector<cv::KeyPoint>& keypoints,
+                                         cv::Mat& descriptors)
+{
+    if(!gYoloDetector)
+        return;
+
+    gYoloDetector->ClearArea();
+    gYoloDetector->GetImage(image);
+    if(!gYoloDetector->Detect())
+        return;
+
+    std::vector<cv::KeyPoint> filtered;
+    cv::Mat filteredDesc;
+
+    for(size_t i=0;i<keypoints.size();++i)
+    {
+        bool drop = false;
+        for(const auto& box : gYoloDetector->mvDynamicArea)
+        {
+            if(box.contains(keypoints[i].pt))
+            {
+                drop = true;
+                break;
+            }
+        }
+
+        if(!drop)
+        {
+            filtered.push_back(keypoints[i]);
+            filteredDesc.push_back(descriptors.row(i));
+        }
+    }
+
+    keypoints.swap(filtered);
+    descriptors = filteredDesc.clone();
+
+    gYoloDetector->ClearArea();
+    gYoloDetector->ClearImage();
 }
 // void SPextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
 //                       OutputArray _descriptors)
